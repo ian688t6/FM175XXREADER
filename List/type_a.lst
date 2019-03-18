@@ -1,0 +1,276 @@
+C51 COMPILER V9.54   TYPE_A                                                                03/17/2019 17:50:19 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE TYPE_A
+OBJECT MODULE PLACED IN .\Output\type_a.obj
+COMPILER INVOKED BY: E:\Tools\Keil5\C51\BIN\C51.EXE type_a.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\Inc) DEBUG OBJECTEX
+                    -TEND PRINT(.\List\type_a.lst) OBJECT(.\Output\type_a.obj)
+
+line level    source
+
+   1          /*************************************************************/
+   2          //2014.07.15修改版
+   3          /*************************************************************/
+   4          #include "main.h"
+   5          #include "FM175XX.h"
+   6          #include "type_a.h"
+   7          #include "STC15F2K60S2.h"
+   8          #include "pin.h"
+   9          #include "uart.h"
+  10          
+  11          struct PICC_A_STR PICC_A;   
+  12          /****************************************************************************************/
+  13          /*名称：TypeA_Request                                                                                                                                   */
+  14          /*功能：TypeA_Request卡片寻卡                                                                                                                   */
+  15          /*输入：                                                                                                                                                                */
+  16          /*                                                                                                                                                      */
+  17          /*                                                                                                                                                                      */
+  18          /*输出：                                                                                                                                                                */
+  19          /*              pTagType[0],pTagType[1] =ATQA                                                   */                                      
+  20          /*              OK: 应答正确                                                                    */
+  21          /*                      ERROR: 应答错误                                                                                                                         */
+  22          /****************************************************************************************/
+  23          unsigned char TypeA_Request(unsigned char *pTagType)
+  24          {
+  25   1              unsigned char data result,send_buff[1],rece_buff[2];
+  26   1              unsigned int data rece_bitlen;
+  27   1              Clear_BitMask(TxModeReg,0x80);//关闭TX CRC
+  28   1              Clear_BitMask(RxModeReg,0x80);//关闭RX CRC
+  29   1              Set_BitMask(RxModeReg, 0x08);//关闭位接收
+  30   1              Clear_BitMask(Status2Reg,0x08);
+  31   1              Write_Reg(BitFramingReg,0x07);
+  32   1              send_buff[0] = 0x26;
+  33   1              Pcd_SetTimer(1);
+  34   1              result = Pcd_Comm(Transceive,send_buff,1,rece_buff,&rece_bitlen);
+  35   1              if ((result == OK) && (rece_bitlen == 2*8))
+  36   1              {    
+  37   2                      *pTagType     = rece_buff[0];
+  38   2                      *(pTagType+1) = rece_buff[1];
+  39   2              }
+  40   1              return result;
+  41   1      }
+  42          /****************************************************************************************/
+  43          /*名称：TypeA_WakeUp                                                                                                                                    */
+  44          /*功能：TypeA_WakeUp卡片寻卡                                                                                                                    */
+  45          /*输入：                                                                                                                                                                */
+  46          /*                                                                                                                                                      */
+  47          /*                                                                                                                                                                      */
+  48          /*输出：                                                                                                                                                                */
+  49          /*              pTagType[0],pTagType[1] =ATQA                                                   */                                      
+  50          /*              OK: 应答正确                                                                    */
+  51          /*                      ERROR: 应答错误                                                                                                                         */
+  52          /****************************************************************************************/
+  53          unsigned char TypeA_WakeUp(unsigned char *pTagType)
+  54          {
+C51 COMPILER V9.54   TYPE_A                                                                03/17/2019 17:50:19 PAGE 2   
+
+  55   1              unsigned char data result,send_buff[1],rece_buff[2];
+  56   1              unsigned int data rece_bitlen;  
+  57   1              Clear_BitMask(TxModeReg,0x80);//关闭TX CRC
+  58   1              Clear_BitMask(RxModeReg,0x80);//关闭RX CRC
+  59   1              Set_BitMask(RxModeReg, 0x08);//关闭位接收
+  60   1              Clear_BitMask(Status2Reg,0x08);
+  61   1              Write_Reg(BitFramingReg,0x07);
+  62   1              send_buff[0] = 0x52;
+  63   1              Pcd_SetTimer(1);
+  64   1              result = Pcd_Comm(Transceive,send_buff,1,rece_buff,&rece_bitlen);
+  65   1      
+  66   1              if ((result == OK) && (rece_bitlen == 2*8))
+  67   1              {    
+  68   2                      *pTagType     = rece_buff[0];
+  69   2                      *(pTagType+1) = rece_buff[1];
+  70   2              }
+  71   1              return result;
+  72   1      }
+  73          /****************************************************************************************/
+  74          /*名称：TypeA_Anticollision                                                                                                                             */
+  75          /*功能：TypeA_Anticollision卡片防冲突                                                                                                   */
+  76          /*输入：selcode =0x93，0x95，0x97                                                                                                               */
+  77          /*                                                                                                                                                      */
+  78          /*                                                                                                                                                                      */
+  79          /*输出：                                                                                                                                                                */
+  80          /*              pSnr[0],pSnr[1],pSnr[2],pSnr[3]pSnr[4] =UID                                     */                                      
+  81          /*              OK: 应答正确                                                                    */
+  82          /*                      ERROR: 应答错误                                                                                                                         */
+  83          /****************************************************************************************/
+  84          unsigned char TypeA_Anticollision(unsigned char selcode,unsigned char *pSnr)
+  85          {
+  86   1          unsigned char data result,i,send_buff[2],rece_buff[5];
+  87   1          unsigned int data rece_bitlen;
+  88   1              Clear_BitMask(TxModeReg,0x80);
+  89   1              Clear_BitMask(RxModeReg,0x80);
+  90   1          Clear_BitMask(Status2Reg,0x08);
+  91   1          Write_Reg(BitFramingReg,0x00);
+  92   1          Clear_BitMask(CollReg,0x80);
+  93   1       
+  94   1          send_buff[0] = selcode;
+  95   1          send_buff[1] = 0x20;
+  96   1          Pcd_SetTimer(1);
+  97   1          result = Pcd_Comm(Transceive,send_buff,2,rece_buff,&rece_bitlen);
+  98   1      
+  99   1          if (result == OK)
+ 100   1          {
+ 101   2               for (i=0; i<5; i++)
+ 102   2                      *(pSnr+i)  = rece_buff[i];
+ 103   2               if (pSnr[4] != (pSnr[0]^pSnr[1]^pSnr[2]^pSnr[3]))
+ 104   2                      result = ERROR;    
+ 105   2          }
+ 106   1        return result;
+ 107   1      }
+ 108          /****************************************************************************************/
+ 109          /*名称：TypeA_Select                                                                                                                                    */
+ 110          /*功能：TypeA_Select卡片选卡                                                                                                                    */
+ 111          /*输入：selcode =0x93，0x95，0x97                                                                                                               */
+ 112          /*      pSnr[0],pSnr[1],pSnr[2],pSnr[3]pSnr[4] =UID                                                     */
+ 113          /*                                                                                                                                                                      */
+ 114          /*输出：                                                                                                                                                                */
+ 115          /*              pSak[0],pSak[1],pSak[2] =SAK                                                            */                                      
+ 116          /*              OK: 应答正确                                                                    */
+C51 COMPILER V9.54   TYPE_A                                                                03/17/2019 17:50:19 PAGE 3   
+
+ 117          /*                      ERROR: 应答错误                                                                                                                         */
+ 118          /****************************************************************************************/
+ 119          unsigned char TypeA_Select(unsigned char selcode,unsigned char *pSnr,unsigned char *pSak)
+ 120          {
+ 121   1          unsigned char data result,i,send_buff[7],rece_buff[5];
+ 122   1          unsigned int data rece_bitlen;
+ 123   1              Write_Reg(BitFramingReg,0x00);
+ 124   1              Set_BitMask(TxModeReg,0x80);
+ 125   1              Set_BitMask(RxModeReg,0x80);
+ 126   1          Clear_BitMask(Status2Reg,0x08);
+ 127   1              
+ 128   1              send_buff[0] = selcode;
+ 129   1          send_buff[1] = 0x70;
+ 130   1          
+ 131   1          for (i=0; i<5; i++)
+ 132   1              send_buff[i+2] = *(pSnr+i);
+ 133   1          
+ 134   1              Pcd_SetTimer(1);
+ 135   1          result = Pcd_Comm(Transceive,send_buff,7,rece_buff,&rece_bitlen);
+ 136   1          if (result == OK)
+ 137   1              *pSak=rece_buff[0]; 
+ 138   1              return result;
+ 139   1      }
+ 140          /****************************************************************************************/
+ 141          /*名称：TypeA_Halt                                                                                                                                              */
+ 142          /*功能：TypeA_Halt卡片停止                                                                                                                              */
+ 143          /*输入：                                                                                                                                                                */
+ 144          /*                                                                                                                                                      */
+ 145          /*                                                                                                                                                                      */
+ 146          /*输出：                                                                                                                                                                */
+ 147          /*                                                                                                                                      */                                      
+ 148          /*              OK: 应答正确                                                                    */
+ 149          /*                      ERROR: 应答错误                                                                                                                         */
+ 150          /****************************************************************************************/
+ 151          unsigned char TypeA_Halt(void)
+ 152          {
+ 153   1          unsigned char data result,send_buff[2],rece_buff[1];
+ 154   1              unsigned int data rece_bitlen;
+ 155   1          send_buff[0] = 0x50;
+ 156   1          send_buff[1] = 0x00;
+ 157   1         
+ 158   1              Write_Reg(BitFramingReg,0x00);
+ 159   1              Set_BitMask(TxModeReg,0x80);
+ 160   1              Set_BitMask(RxModeReg,0x80);
+ 161   1          Clear_BitMask(Status2Reg,0x08);
+ 162   1              Pcd_SetTimer(1);
+ 163   1          result = Pcd_Comm(Transmit,send_buff,2,rece_buff,&rece_bitlen);
+ 164   1          return result;
+ 165   1      }
+ 166          /****************************************************************************************/
+ 167          /*名称：TypeA_CardActivate                                                                                                                              */
+ 168          /*功能：TypeA_CardActivate卡片激活                                                                                                              */
+ 169          /*输入：                                                                                                                                                                */
+ 170          /*                                                                                                                                                      */
+ 171          /*                                                                                                                                                                      */
+ 172          /*输出：        pTagType[0],pTagType[1] =ATQA                                                                                           */
+ 173          /*              pSnr[0],pSnr[1],pSnr[2],pSnr[3]pSnr[4] =UID                                             */
+ 174          /*              pSak[0],pSak[1],pSak[2] =SAK                                                            */                                      
+ 175          /*              OK: 应答正确                                                                    */
+ 176          /*                      ERROR: 应答错误                                                                                                                         */
+ 177          /****************************************************************************************/
+ 178          unsigned char TypeA_CardActivate(struct PICC_A_STR *type_a_card)
+C51 COMPILER V9.54   TYPE_A                                                                03/17/2019 17:50:19 PAGE 4   
+
+ 179          {
+ 180   1              unsigned char data result;
+ 181   1              result=TypeA_Request(type_a_card->ATQA);//寻卡 Standard  send request command Standard mode
+ 182   1              if (result==ERROR)
+ 183   1                      return ERROR;
+ 184   1              if      ((type_a_card->ATQA[0]&0xC0)==0x00)     //一重UID
+ 185   1              {
+ 186   2                      result=TypeA_Anticollision(0x93,type_a_card->UID);//1级防冲突
+ 187   2                      if (result==ERROR)
+ 188   2                              return ERROR;
+ 189   2                                              
+ 190   2                      result=TypeA_Select(0x93,type_a_card->UID,&type_a_card->SAK);//1级选卡
+ 191   2                      if (result==ERROR)
+ 192   2                              return ERROR;
+ 193   2                      type_a_card->UID_len=4;
+ 194   2              }
+ 195   1      
+ 196   1              if      ((type_a_card->ATQA[0]&0xC0)==0x40)     //二重UID
+ 197   1              {
+ 198   2                      result=TypeA_Anticollision(0x93,type_a_card->UID);//1级防冲突
+ 199   2                      if (result==ERROR)
+ 200   2                              return ERROR;
+ 201   2                                              
+ 202   2                      result=TypeA_Select(0x93,type_a_card->UID,&type_a_card->SAK);//1级选卡
+ 203   2                      if (result==ERROR)
+ 204   2                              return ERROR;
+ 205   2                                      
+ 206   2                      result=TypeA_Anticollision(0x95,type_a_card->UID+4);//2级防冲突
+ 207   2                      if (result==ERROR)
+ 208   2                              return ERROR;
+ 209   2                                      
+ 210   2                      result=TypeA_Select(0x95,type_a_card->UID+4,&type_a_card->SAK);//2级选卡
+ 211   2                      if (result==ERROR)
+ 212   2                              return ERROR;
+ 213   2                      type_a_card->UID_len=8;
+ 214   2              }
+ 215   1      
+ 216   1              if      ((type_a_card->ATQA[0]&0xC0)==0x80)     //三重UID
+ 217   1              {
+ 218   2                      result=TypeA_Anticollision(0x93,type_a_card->UID);//1级防冲突
+ 219   2                      if (result==ERROR)
+ 220   2                              return ERROR;
+ 221   2                                      
+ 222   2                      result=TypeA_Select(0x93,type_a_card->UID,&type_a_card->SAK);//1级选卡
+ 223   2                      if (result==ERROR)
+ 224   2                              return ERROR;
+ 225   2                                      
+ 226   2                      result=TypeA_Anticollision(0x95,type_a_card->UID+4);//2级防冲突
+ 227   2                      if (result==ERROR)
+ 228   2                              return ERROR;
+ 229   2                      
+ 230   2                      result=TypeA_Select(0x95,type_a_card->UID+4,&type_a_card->SAK);//2级选卡
+ 231   2                      if (result==ERROR)
+ 232   2                              return ERROR;
+ 233   2                              
+ 234   2                      result=TypeA_Anticollision(0x97,type_a_card->UID+8);//3级防冲突
+ 235   2                      if (result==ERROR)
+ 236   2                              return ERROR;
+ 237   2                              
+ 238   2                      result=TypeA_Select(0x97,type_a_card->UID+8,&type_a_card->SAK);//3级选卡
+ 239   2                      if (result==ERROR)
+ 240   2                              return ERROR;
+C51 COMPILER V9.54   TYPE_A                                                                03/17/2019 17:50:19 PAGE 5   
+
+ 241   2                      type_a_card->UID_len=12;
+ 242   2              }
+ 243   1              return result;
+ 244   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1454    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     16      20
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      46
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

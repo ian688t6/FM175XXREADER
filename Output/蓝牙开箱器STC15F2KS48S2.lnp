@@ -1,0 +1,16 @@
+".\Output\uart.obj",
+".\Output\main.obj",
+".\Output\type_a.obj",
+".\Output\spi.obj",
+".\Output\mifare_card.obj",
+".\Output\fm175xx.obj",
+".\Output\cpu_card.obj",
+".\Output\ultralight.obj",
+".\Output\type_b.obj",
+".\Output\type_f.obj",
+".\Output\uart_app.obj",
+".\Output\I2C.obj",
+".\Output\BT.obj",
+".\Output\EEPROM.obj" 
+TO ".\Output\À¶ÑÀ¿ªÏäÆ÷STC15F2KS48S2" 
+PRINT(".\List\À¶ÑÀ¿ªÏäÆ÷STC15F2KS48S2.m51") RAMSIZE(256) 

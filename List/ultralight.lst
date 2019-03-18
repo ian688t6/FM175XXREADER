@@ -1,0 +1,84 @@
+C51 COMPILER V9.54   ULTRALIGHT                                                            03/17/2019 17:08:42 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE ULTRALIGHT
+OBJECT MODULE PLACED IN .\Output\ultralight.obj
+COMPILER INVOKED BY: E:\Tools\Keil5\C51\BIN\C51.EXE ultralight.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\Inc) DEBUG OBJE
+                    -CTEXTEND PRINT(.\List\ultralight.lst) OBJECT(.\Output\ultralight.obj)
+
+line level    source
+
+   1          
+   2          #include "pin.h"
+   3          #include "fm175xx.h"
+   4          #include "ultralight.h"
+   5          #include "type_a.h"
+   6          #include "main.h"
+   7          
+   8          /*****************************************************************************************/
+   9          /*名称：ultra_read                                                                                                                                               */
+  10          /*功能：ultralight卡片读块                                                                                                                               */
+  11          /*输入：        page：块地址（0~15）                                                                                             */
+  12          /*输出：        buff：块数据指针（数据长度为4字节）                                                                                      */
+  13          /*              OK: 应答正确                                                                     */
+  14          /*                      ERROR: 应答错误                                                                                                                          */
+  15          /*****************************************************************************************/
+  16          unsigned char Ultra_Read(unsigned char page,unsigned char *buff)
+  17          {
+  18   1              unsigned char data ret;
+  19   1              unsigned char data send_byte[2];
+  20   1              unsigned int data rece_bitlen;
+  21   1              Write_Reg(TxModeReg,0x80);
+  22   1              Write_Reg(RxModeReg,0x80);
+  23   1          Write_Reg(BitFramingReg,0x00);
+  24   1              send_byte[0]=0x30;
+  25   1              send_byte[1]=page;
+  26   1              Pcd_SetTimer(1);
+  27   1              ret=Pcd_Comm(Transceive,send_byte,2,buff,&rece_bitlen);
+  28   1              return ret;
+  29   1      }
+  30          /*****************************************************************************************/
+  31          /*名称：ultra_write                                                                                                                                              */
+  32          /*功能：ultralight卡片写块                                                                                                                               */
+  33          /*输入：        page：页地址（0~15）                                                                                             */
+  34          /*输出：        buff：写块数据指针（4字节）                                                                                                      */
+  35          /*              OK: 应答正确                                                                     */
+  36          /*                      ERROR: 应答错误                                                                                                                          */
+  37          /*****************************************************************************************/
+  38          unsigned char Ultra_Write(unsigned char page,unsigned char *buff)
+  39          {
+  40   1              unsigned char data ret;
+  41   1              unsigned char data send_byte[6],rece_byte[1];
+  42   1              unsigned int data rece_bitlen;
+  43   1              send_byte[0]=0xA2;
+  44   1              send_byte[1]=page;
+  45   1              send_byte[2]=buff[0];
+  46   1              send_byte[3]=buff[1];
+  47   1              send_byte[4]=buff[2];
+  48   1              send_byte[5]=buff[3];
+  49   1              Pcd_SetTimer(10);
+  50   1              
+  51   1              ret=Pcd_Comm(Transceive,send_byte,6,rece_byte,&rece_bitlen);
+  52   1      
+  53   1              if ((ret!=0 )|(rece_byte[0]!=0x0A))     //如果未接收到0x0A，表示无ACK
+  54   1                      return ERROR;
+C51 COMPILER V9.54   ULTRALIGHT                                                            03/17/2019 17:08:42 PAGE 2   
+
+  55   1              return OK;
+  56   1      }
+  57          
+  58          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    225    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----       4
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      15
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
