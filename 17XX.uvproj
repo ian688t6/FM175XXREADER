@@ -374,11 +374,6 @@
               <FilePath>.\main.c</FilePath>
             </File>
             <File>
-              <FileName>mifare_card.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\mifare_card.c</FilePath>
-            </File>
-            <File>
               <FileName>uart_app.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\uart_app.c</FilePath>
@@ -389,34 +384,19 @@
               <FilePath>.\I2C.c</FilePath>
             </File>
             <File>
-              <FileName>BT.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\BT.c</FilePath>
-            </File>
-            <File>
               <FileName>EEPROM.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\EEPROM.c</FilePath>
             </File>
             <File>
-              <FileName>24Cxx.c</FileName>
+              <FileName>pcd.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\24Cxx.c</FilePath>
+              <FilePath>.\pcd.c</FilePath>
             </File>
             <File>
-              <FileName>2405.c</FileName>
+              <FileName>des.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\2405.c</FilePath>
-            </File>
-            <File>
-              <FileName>rc522.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\rc522.c</FilePath>
-            </File>
-            <File>
-              <FileName>spi.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\spi.c</FilePath>
+              <FilePath>.\des.c</FilePath>
             </File>
           </Files>
         </Group>

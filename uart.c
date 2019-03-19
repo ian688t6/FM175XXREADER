@@ -12,7 +12,7 @@
  struct status data uart_status;
  struct uart_buff send_buff;
  struct uart_buff rece_buff;
- unsigned char uart_data[512];
+ unsigned char uart_data[256];
 /*********************************************/
 /*函数名：	    timer_uart_init
 /*功能：	    时钟与串口初始化

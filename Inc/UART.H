@@ -25,7 +25,7 @@ struct status
 extern struct status data uart_status;
 extern struct uart_buff send_buff;
 extern struct uart_buff rece_buff;
-extern unsigned	char uart_data[512];
+extern unsigned	char uart_data[256];
 
 
 void send(char sj);
@@ -47,5 +47,7 @@ void Send_string2(unsigned char *pz,unsigned int Len);
 void Uart2_Init(void);
 
 void Hex_Print(unsigned char uc_data);
+
+void Uart_Send(void);
 
 #endif

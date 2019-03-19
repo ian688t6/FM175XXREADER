@@ -893,13 +893,13 @@ void Main(void)
 //	uchar Send_buf[100];
 //	uchar open_box_old_cmd[32]= "蓝牙周";
 //	uchar open_box_old_cmd[32]= "直接盒";
-	uint crc;
+//	uint crc;
 	
 	Io_Init();
 	Variable_Init();
 //	SPI_Init();
 	Uart1_Init();
-	Send_string1("\n编译时间2019年3月22日\n",0);
+	Send_string1("\n编译时间2019年3月26日\n",0);
 
 	PcdInit();
 	PcdAntennaOff(); 
@@ -916,6 +916,7 @@ void Main(void)
 		Uart_App();
 	
 	}
+	return;
 }
 
 
@@ -995,7 +996,7 @@ void Delay_100us(unsigned int delay_time)		//0.1ms*delay_time
 void Variable_Init(void)
 {
 	send_buff.buff=uart_data;
-	rece_buff.buff=uart_data+256;
+	rece_buff.buff=uart_data+128;
 	uart_status.rece_finish=False;
 	uart_status.send_finish=False;
 	uart_status.rece_error=False;

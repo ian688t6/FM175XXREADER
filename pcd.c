@@ -18,10 +18,15 @@ void delay_us(unsigned int x)
 	{
 		_nop_();
 		x--;
-	}
-		
+	}		
 }
 
+void pcddelay(unsigned int z)
+{
+	unsigned int x,y;
+	for(x=z;x>0;x--)
+	for(y=110;y>0;y--);	
+}
 						
 //*************************************************************************
 // 函数名	：RC522_Init
@@ -770,4 +775,490 @@ u16 PcdSelectFile(u8* pDataIn, u8* pDataOut,u8 * Len)
 	else
 		return ST_ERR;
 }
+
+//*************************************************************************
+// 函数名	：PcdExAuth
+// 描述		：外部认证密钥
+// 入口		：keyflag: 外部认证密钥标识号
+// 			  pRan: 8个字节的验证密钥.
+// 出口		：无
+// 返回		：成功返回9000
+//*************************************************************************
+
+u16 PcdExAuth(u8 keysign, u8 *pRan)
+{
+	s8 status =MI_ERR;  
+	u16 unLen;
+	u8 ucComMF522Buf[MAXRLEN]; 
+	u8 st[2];
+	u16 sst=0;
+
+	ClearBitMask(Status2Reg,0x08);			// 清空校验成功标志,清除MFCrypto1On位
+	
+	memset(ucComMF522Buf, 0x00, MAXRLEN);
+	
+ 	PcdSwitchPCB();
+	
+	ucComMF522Buf[0] = PCB;	
+	ucComMF522Buf[1] = 0x01;
+	ucComMF522Buf[2] = 0x00;				// CLA
+	ucComMF522Buf[3] = 0x82;				// INS - external authenticate
+	ucComMF522Buf[4] = 0x00;				// P1
+	ucComMF522Buf[5] = keysign;				// P2 - 认证的密码标识号  羊城通为0x54
+	ucComMF522Buf[6] = 0x08;				// Lc - 8个字节的密钥
+	ucComMF522Buf[7] = pRan[0];					 
+	ucComMF522Buf[8] = pRan[1];
+	ucComMF522Buf[9] = pRan[2];
+	ucComMF522Buf[10] = pRan[3];
+	ucComMF522Buf[11] = pRan[4];
+	ucComMF522Buf[12] = pRan[5];
+	ucComMF522Buf[13] = pRan[6];
+	ucComMF522Buf[14] = pRan[7];			// 以上为8个字节的验证密钥
+
+    CalulateCRC(ucComMF522Buf,15,&ucComMF522Buf[15]);	// 生成发送内容的CRC校验,保存到最后两个字节
+										
+	status = PcdComCmd(PCD_TRANSCEIVE,ucComMF522Buf,17,ucComMF522Buf,&unLen);// 将收到的卡片类型号保存
+	
+	if (status == MI_OK)
+	{
+		st[0] = ucComMF522Buf[2];	 //0X90
+		st[1] = ucComMF522Buf[3]; 	 //0X00
+
+		sst=st[0];
+		sst=(sst<<8)|st[1];
+
+		return sst;
+	}
+	else
+	{
+		if((ucComMF522Buf[2]==0x90)&&(ucComMF522Buf[3]==0x00))
+		return 0x9000;
+		else
+		return MI_ERR;
+
+	 }
+
+}
+
+//*************************************************************************
+// 函数名	：PcdEraseDF
+// 描述		：擦除目录
+// 入口		：无
+// 出口		：无
+// 返回		：成功返回MI_OK
+//*************************************************************************
+
+u16 PcdEraseDF(void)
+{  
+	s8 status =MI_ERR;
+	u16 unLen;
+	u8 ucComMF522Buf[MAXRLEN];
+	u8 st[2];
+	u16 sst=0;
+
+	ClearBitMask(Status2Reg, 0x08);												// 清空校验成功标志,清除MFCrypto1On位
+
+	memset(ucComMF522Buf, 0x00, MAXRLEN);
+
+ 	PcdSwitchPCB();
+	
+	ucComMF522Buf[0] = PCB;	 
+	ucComMF522Buf[1] = 0x01;
+	ucComMF522Buf[2] = 0x80;			//CLA 
+	ucComMF522Buf[3] = 0x0E;			//INS -EraseDF	
+	ucComMF522Buf[4] = 0x00;			//P1
+	ucComMF522Buf[5] = 0x00;			//P2
+	ucComMF522Buf[6] = 0x00;			//Lc
+	
+    CalulateCRC(ucComMF522Buf, 7, &ucComMF522Buf[7]);								// 生成发送内容的CRC校验,保存到最后两个字节
+
+	status = PcdComCmd(PCD_TRANSCEIVE, ucComMF522Buf, 9, ucComMF522Buf, &unLen);			// 将收到的卡片类型号保存			 
+	if (status == MI_OK)
+	{
+		st[0] = ucComMF522Buf[2];
+		st[1] = ucComMF522Buf[3]; 
+
+		sst=st[0];
+		sst=(sst<<8)|st[1];
+
+		return sst;
+	}
+	else
+		return ST_ERR;
+			
+}
+	
+//*************************************************************************
+// 函数名	：PcdEraseCheck
+// 描述		：擦除检查
+// 入口		：无
+// 出口		：pDataOut 输出的数据
+// 返回		：MI_OK 执行成功
+//*************************************************************************
+
+s8 PcdEraseCheck(u8* pDataOut,u8 *Len)
+{
+	s8 status =MI_ERR;
+	u16 unLen;
+	u8 ucComMF522Buf[MAXRLEN]; 
+	
+	ClearBitMask(Status2Reg, 0x08); 											// 清空校验成功标志,清除MFCrypto1On位
+	
+	memset(ucComMF522Buf, 0x00, MAXRLEN);
+					   
+ 	PcdSwitchPCB();
+	
+	ucComMF522Buf[0] = 0xFA;
+	ucComMF522Buf[1] = 0x01;
+	ucComMF522Buf[2] = 0x01;
+
+    CalulateCRC(ucComMF522Buf, 3, &ucComMF522Buf[3]);						// 生成发送内容的CRC校验,保存到最后两个字节
+
+	status = PcdComCmd(PCD_TRANSCEIVE, ucComMF522Buf, 5, pDataOut, &unLen);	// 将收到的卡片类型号保存		
+	if (status == MI_OK)
+	{
+		Len[0]= unLen/8-2;
+		return MI_OK;
+	}
+	return MI_ERR;
+
+
+}
+
+
+//*************************************************************************
+// 函数名	：PcdCreateFile
+// 描述		：创建文件
+// 入口		：fileid文件标识  
+// 出口		：
+// 返回		：
+//*************************************************************************
+
+u16 PcdCreateFile(u8 *fileid, u8 Len, u8 *pDataIn)
+{
+	s8 status =MI_ERR;	
+	u16 unLen;
+	u8 i, ucComMF522Buf[MAXRLEN]; 
+	u8 st[2];
+	u16 sst=0;
+	
+		
+	ClearBitMask(Status2Reg,0x08);	// 清空校验成功标志,清除MFCrypto1On位
+	
+	memset(ucComMF522Buf, 0x00, MAXRLEN);
+	
+	PcdSwitchPCB();
+		
+	ucComMF522Buf[0] = PCB;
+	ucComMF522Buf[1] = 0x01;
+	ucComMF522Buf[2] = 0x80;			//CLA
+	ucComMF522Buf[3] = 0xE0;			//INS-Create File	
+	ucComMF522Buf[4] = fileid[0];		//P1
+	ucComMF522Buf[5] = fileid[1];		//P2
+	ucComMF522Buf[6] = Len;				//Lc 
+	for (i=0; i<Len; i++)
+		ucComMF522Buf[7+i] = *(pDataIn+i);						//写入内容
+	
+	CalulateCRC(ucComMF522Buf,7+Len,&ucComMF522Buf[7+Len]); 	// 生成发送内容的CRC校验,保存到最后两个字节
+										
+	status = PcdComCmd(PCD_TRANSCEIVE,ucComMF522Buf,9+Len,ucComMF522Buf,&unLen);// 将收到的卡片类型号保存 	
+					   				
+	if (status == MI_OK)
+	{
+		st[0] = ucComMF522Buf[2];
+		st[1] = ucComMF522Buf[3]; 
+
+		sst=st[0];
+		sst=(sst<<8)|st[1];
+
+		return sst;
+	}
+	else
+	{
+		if((ucComMF522Buf[2]==0x90)&&(ucComMF522Buf[3]==0x00))
+		{
+			st[0] = ucComMF522Buf[2];
+			st[1] = ucComMF522Buf[3]; 
+	
+			sst=st[0];
+			sst=(sst<<8)|st[1];
+	
+			return sst;
+		}
+	
+		else
+		return MI_ERR;
+	}
+}
+
+//*************************************************************************
+// 函数名	：PcdSetKey
+// 描述		：修改密钥
+// 入口		：
+//					Keysign:密钥标识
+//					Lc : 长度
+//					pDataIn : 输入数据
+//					Le : 返回长度
+// 出口		：
+// 返回		：成功返回9000
+//*************************************************************************
+
+u16 PcdSetKey(u8 Keysign, u8 Len, u8* pDataIn)
+{
+	s8 status = MI_ERR;  
+	u16 unLen;
+	u8 i,ucComMF522Buf[MAXRLEN]; 
+	u8 st[2];
+	u16 sst=0;
+
+	ClearBitMask(Status2Reg,0x08);							//清空校验成功标志,清除MFCrypto1On位
+	
+	memset(ucComMF522Buf, 0x00, MAXRLEN);
+	
+ 	PcdSwitchPCB();
+
+	ucComMF522Buf[0] = PCB;
+	ucComMF522Buf[1] = 0x01;
+	ucComMF522Buf[2] = 0x80;
+	ucComMF522Buf[3] = 0xD4;				
+	ucComMF522Buf[4] = 0x01;								 
+	ucComMF522Buf[5] = Keysign;								//密钥标识
+	ucComMF522Buf[6] = Len;									//该字节以后的所有数据的长度
+	for (i=0; i < Len; i++)										
+		ucComMF522Buf[7+i] = *(pDataIn+i);					//数据内容
+		
+	CalulateCRC(ucComMF522Buf, 7+Len, &ucComMF522Buf[7+Len]);	// 生成发送内容的CRC校验,保存到最后两个字节	  
+	
+	status = PcdComCmd(PCD_TRANSCEIVE, ucComMF522Buf, 9+Len, ucComMF522Buf, &unLen);// 将收到的卡片类型号保存
+	if (status == MI_OK)
+	{
+		st[0] = ucComMF522Buf[2];	 //0X90
+		st[1] = ucComMF522Buf[3]; 	 //0X00
+
+		sst=st[0];
+		sst=(sst<<8)|st[1];
+
+		return sst;
+	}
+	else
+		return ST_ERR;
+}
+
+//*************************************************************************
+// 函数名	：PcdReadBinary
+// 描述		：读取二进制文件
+// 入口		：sofset:最高位为1,P1 P2为欲读文件的偏移量,P1为偏移量高字节,P2为低字节,所读的文件为当前文件
+//			: Len:要读的数据长度		
+// 出口		：pDataOut：读出的数据 ,LenOut,返回的数据长度
+// 返回		：成功返回9000
+//*************************************************************************
+
+u16 PcdReadBinary(u8 P1,u8 P2 , u8 Len, u8* pDataOut,u8* LenOut)
+{
+	s8 status =MI_ERR;  
+	u16 unLen;
+	u8 ucComMF522Buf[MAXRLEN]; 
+	u8 st[2];
+	u16 sst=0;
+
+
+	ClearBitMask(Status2Reg,0x08);							//清空校验成功标志,清除MFCrypto1On位
+		
+	memset(ucComMF522Buf, 0x00, MAXRLEN);
+	
+ 	PcdSwitchPCB();
+
+	ucComMF522Buf[0] = PCB;
+	ucComMF522Buf[1] = 0x01;
+	ucComMF522Buf[2] = 0x00;
+	ucComMF522Buf[3] = 0xB0;			
+	ucComMF522Buf[4] = P1;								//起始位置高字节	  ,注意，高8位不能为1，P1的有效地址为0X7F
+	ucComMF522Buf[5] = P2;								//起始位置低字节	                       P2的有效地址为0XFF
+	ucComMF522Buf[6] = Len;									//返回数据的长度
+	CalulateCRC(ucComMF522Buf, 7, &ucComMF522Buf[7]);	// 生成发送内容的CRC校验,保存到最后两个字节	
+		
+	status = PcdComCmd(PCD_TRANSCEIVE, ucComMF522Buf, 9, pDataOut, &unLen);// 将收到的卡片类型号保存
+
+
+	if (status == MI_OK)
+	{
+		st[0] = pDataOut[Len+2];	 //0X90
+		st[1] = pDataOut[Len+3]; 	 //0X00
+					   
+		sst=st[0];
+		sst=(sst<<8)|st[1];
+		LenOut[0] = unLen/8;
+		return sst;
+	}
+	else
+		return ST_ERR;
+
+}
+
+
+//*************************************************************************
+// 函数名	：PcdUpdateBinary
+// 描述		：写入二进制文件
+// 入口		：AddressH,AddressL : 起始地址的高位及低位
+//			  Len : 写入的字节数		
+//			  pDataIn : 写入数据		
+//					
+// 出口		：无
+// 返回		：成功返回9000
+//*************************************************************************
+
+u16 PcdUpdateBinary(u8 P1,u8 P2 , u8 Len, u8* pDataIn)
+{
+	s8 status =MI_ERR;  
+	u16 unLen;
+	u8 i,ucComMF522Buf[MAXRLEN];  
+	u8 st[2];
+	u16 sst=0;
+
+	ClearBitMask(Status2Reg,0x08);						// 清空校验成功标志,清除MFCrypto1On位
+
+ 
+	memset(ucComMF522Buf, 0x00, MAXRLEN);
+
+ 	PcdSwitchPCB();
+	
+	ucComMF522Buf[0] = PCB;
+	ucComMF522Buf[1] = 0x01;
+	ucComMF522Buf[2] = 0x00;
+	ucComMF522Buf[3] = 0xD6;				
+	ucComMF522Buf[4] = P1;										//起始位置高字节	  ,注意，高8位不能为1，P1的有效地址为0X7F
+	ucComMF522Buf[5] = P2;										//起始位置低字节	                       P2的有效地址为0XFF
+	ucComMF522Buf[6] = Len;											//数据内容长度
+	for (i=0; i<Len; i++)										
+		ucComMF522Buf[7+i] = *(pDataIn+i);							//数据内容
+		
+	CalulateCRC(ucComMF522Buf, 7+Len, &ucComMF522Buf[7+Len]);
+	
+	status = PcdComCmd(PCD_TRANSCEIVE, ucComMF522Buf, 9+Len, ucComMF522Buf, &unLen);
+
+	if (status == MI_OK)
+	{
+		st[0] = ucComMF522Buf[2];	 //0X90
+		st[1] = ucComMF522Buf[3]; 	 //0X00
+
+		sst=st[0];
+		sst=(sst<<8)|st[1];
+
+		return sst;
+	}
+	else
+		return ST_ERR;
+}
+
+//*************************************************************************
+// 函数名	：WTX_Cmd
+// 描述		：此函数主要作用是，当对CPU卡建文件或删除文件时，需要提供等待时间，
+//            当执行CPU卡指令返回01时，我们则把01发送回给CPU卡，直到等到不再返回01则执行成功
+// 入口		：pDataIn : 要执行的指令					
+// 出口		：pDataOut：输出执行后的返回数据   Out_Len输出的数据长度
+// 返回		：MI_OK
+//*************************************************************************
+char  WTX_Cmd(unsigned char* pDataOut,unsigned char * Out_Len)
+{
+  
+    char status;
+
+	unsigned int  idata sst=0;
+	unsigned int  unLen;
+    unsigned char ucComMF522Buf[MAXRLEN]; 
+  
+  
+	ClearBitMask(Status2Reg,0x08);					// 清空校验成功标志,清除MFCrypto1On位
+	memset(ucComMF522Buf, 0x00, MAXRLEN);
+
+
+    ucComMF522Buf[0] = 0xFA;
+    ucComMF522Buf[1] = 0x01;
+	ucComMF522Buf[2] = 0X01;				
+		
+
+    CalulateCRC(ucComMF522Buf,3,&ucComMF522Buf[3]);	// 生成发送内容的CRC校验,保存到最后两个字节
+
+	status = PcdComCmd(PCD_TRANSCEIVE,ucComMF522Buf,5,pDataOut,&unLen);
+								
+    if (status == MI_OK)
+    {
+ 	   
+	    *Out_Len=unLen/8;
+		Out_Len[0]-=4;
+		memcpy(pDataOut, &pDataOut[2], Out_Len[0]);	//DATA	
+
+        return   MI_OK;
+    }
+	else
+	{
+		return ST_ERR;
+	}
+	
+ }
+
+ unsigned char  PcdStatus(unsigned int sta)
+{
+	unsigned char t[2];
+	unsigned char  stdata[4];
+	unsigned char TimeOut=200;
+	if(sta!=0x9000) 
+	{
+		 if(sta!=0xFFFF) 
+		 {
+			 t[0]=sta>>8;
+			 t[1]=sta&0x00ff;
+		     if(t[0]==0x01)	  //返回01时，需要等待时，进入
+			 {
+				while(1)
+				{
+					WTX_Cmd(stdata,t);
+					if((stdata[2]==0x90)&&(stdata[3]==0x00))//直到反回9000后退出
+					{
+						return 0;	//执行指令正确
+					}
+					else
+					pcddelay(100);
+					TimeOut--;
+					if(TimeOut==0)
+					{
+//						UART_Send_Str("超时退出");
+						return 1;
+					}
+				}
+			 }
+			 else
+			 {
+
+//				 UART_Send_Str("错误码:");
+//				 UART_Put_Num(t,2);
+			 }
+		 }
+		 else {
+			;
+		 }
+//		 UART_Send_Str("操作失败!");
+//		 UART_Send_Enter();	
+		 return 1;	 //错误
+	}
+	else
+		return 0;	//执行指令正确
+}
+
+ 
+void Request_loop(void)
+{
+ 	s8 status,atq[2] ;
+    while(1)
+    {     
+        status = PcdRequest(PICC_REQALL, atq);
+        if(status != MI_OK)
+        {
+            status = PcdRequest(PICC_REQALL, atq);	
+	        if(status != MI_OK)
+	        break;
+        }
+    }
+ }
+
 

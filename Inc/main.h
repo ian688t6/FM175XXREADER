@@ -64,7 +64,7 @@
 	extern uint R_ACC1;//=0;
 	extern uchar UART1_rs[9];
 	
-	#define UART2 1
+	#define UART2 0
 	#define rs_Max_Len2 200
 	extern uchar xdata receive_data2[];//[rs_Max_Len2];
 	extern uint receive_number2;//=0

@@ -187,14 +187,15 @@ u16 PcdCreateFile(u8 *fileid, u8 Lc, u8 *pDataIn);
 u16 PcdGetChallenge(u8* pRan);
 u16 PcdExAuth(u8 keyflag,u8 *pRan);
 u16 PcdSelectFile(u8* pDataIn, u8* pDataOut,u8 * Len);
-u16 PcdReadBinary(u8 offset, u8 Len, u8* pDataOut);
-u16 PcdUpdateBinary(u8 offset, u8 Len, u8* pDataIn);
+u16 PcdReadBinary(u8 P1,u8 P2 , u8 Len, u8* pDataOut,u8* LenOut);
+u16 PcdUpdateBinary(u8 P1,u8 P2 , u8 Len, u8* pDataIn);
 u16 PcdSetKey(u8 Keysign, u8 Len, u8* pDataIn);
 u16 GetCard(u8 Reqcode, u8* pTagType, u8* pSnr);
 u16 CardReset(u8 * Data_Out,u8 *  Len);
 void Request_loop();
 u8 Pcd_Cmd(u8* pDataIn, u8  In_Len, u8* pDataOut,u8 * Out_Len);
 s8 PcdEraseCheck(u8* pDataOut,u8 *Len);
+unsigned char  PcdStatus(unsigned int sta);
 #endif
 
 
