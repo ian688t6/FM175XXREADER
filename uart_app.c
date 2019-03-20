@@ -408,12 +408,11 @@ void Uart_App(void)
 			break;
 			
 		case 0x68: //读二进制文件
-			if (ST_OK != PcdReadBinary(rece_buff.buff[1], rece_buff.buff[2], rece_buff.buff[3], &send_buff.buff[1], &send_buff.length)) {
+			if (ST_OK != PcdReadBinary(rece_buff.buff[1], rece_buff.buff[2], rece_buff.buff[3], &send_buff.buff[0], &send_buff.length)) {
 				send_buff.buff[0] = ERROR;
 				send_buff.length = 1;			
 			}
-			send_buff.buff[0] = OK;
-			send_buff.length = 64;
+			send_buff.length = rece_buff.buff[3] + 2;
 			break;
 			
 		case 0x69: //创建DF二进制

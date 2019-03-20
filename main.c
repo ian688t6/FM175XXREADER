@@ -899,7 +899,7 @@ void Main(void)
 	Variable_Init();
 //	SPI_Init();
 	Uart1_Init();
-	Send_string1("\n编译时间2019年3月26日\n",0);
+	Send_string1("\n编译时间2019年3月18日\n",0);
 
 	PcdInit();
 	PcdAntennaOff(); 
